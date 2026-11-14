@@ -1,30 +1,35 @@
-name: ci
+name: Auto Green
 
+# 自动保持 GitHub 贡献图常绿：每天自动提交一次。
+# 时间：UTC 00:37（北京时间 08:37），并在任务内再随机延迟 0-30 分钟，避免整点拥堵和过于机械的时间点。
 on:
+  schedule:
+    - cron: "37 0 * * *"
+  workflow_dispatch:
   push:
     branches:
       - main
-  schedule:
-    - cron: "0 0 * * *"
+
+permissions:
+  contents: write
 
 jobs:
   autogreen:
     runs-on: ubuntu-latest
-    
-   # permissions:
-   #   contents: read/write 
-    permissions:
-      contents: write
-  
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Auto green
         run: |
-          git config --local user.email "cdncomco@gmail.com"
-          git config --local user.name "cdncomco"
-          git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git pull --rebase
-          git commit --allow-empty -m "a commit a day keeps your girlfriend away"
+          sleep $((RANDOM % 1800))
+          git config --local user.name "lidalong112"
+          git config --local user.email "128339657+lidalong112@users.noreply.github.com"
+          TZ=Asia/Shanghai date "+%Y-%m-%d" > GREEN.md.tmp
+          if [ -f GREEN.md ] && grep -q "$(cat GREEN.md.tmp)" GREEN.md; then
+            echo "already green today"; rm GREEN.md.tmp; exit 0
+          fi
+          { echo "Last green: $(cat GREEN.md.tmp)"; } > GREEN.md
+          rm GREEN.md.tmp
+          git add GREEN.md
+          git commit -m "a commit a day keeps your girlfriend away" || git commit --allow-empty -m "a commit a day keeps your girlfriend away"
           git push
